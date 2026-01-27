@@ -1,13 +1,14 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import apiFetch from "@/lib/api";
 import { motion, AnimatePresence } from "framer-motion";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import pandaHappy from "@/assets/panda-happy.png";
 import pandaSurprised from "@/assets/panda-surprised.png";
 
-const questions = [
+const fallbackQuestions = [
   {
     question: "How do you say 'Hello' in Spanish?",
     options: ["Hola", "Bonjour", "Ciao", "Hallo"],
@@ -32,6 +33,40 @@ const Lesson = () => {
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
   const [isCorrect, setIsCorrect] = useState<boolean | null>(null);
   const navigate = useNavigate();
+  const location = useLocation();
+  const params = new URLSearchParams(location.search);
+  const lessonId = params.get("lessonId");
+
+  const [questions, setQuestions] = useState(fallbackQuestions);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    // fetch lesson by id and use its questions if available
+    const load = async () => {
+      if (!lessonId) return;
+      setLoading(true);
+      try {
+        const data = await apiFetch(`/api/lessons/${lessonId}`);
+        // server may return { lesson } or just the lesson object
+        const maybeQuestions = data?.questions ?? data?.lesson?.questions ?? data?.lesson?.data?.questions;
+        if (maybeQuestions && Array.isArray(maybeQuestions) && maybeQuestions.length > 0) {
+          setQuestions(maybeQuestions);
+          // reset quiz state so the newly-loaded questions start from beginning
+          setCurrentQuestion(0);
+          setScore(0);
+          setSelectedAnswer(null);
+          setIsCorrect(null);
+          setShowResult(false);
+        }
+      } catch (e) {
+        console.error("Failed to fetch lesson:", e);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    load();
+  }, [lessonId]);
 
   const handleAnswer = (answerIndex: number) => {
     const correct = answerIndex === questions[currentQuestion].correct;
@@ -109,7 +144,21 @@ const Lesson = () => {
             ))}
             
             <Button
-              onClick={() => navigate("/dashboard")}
+              onClick={async () => {
+                try {
+                  // send progress to backend (best-effort)
+                  if (lessonId) {
+                    await fetch("/api/progress", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" , Authorization: `Bearer ${localStorage.getItem('token') ?? ''}`},
+                      body: JSON.stringify({ lessonId, completed: true, score }),
+                    });
+                  }
+                } catch (e) {
+                  // ignore
+                }
+                navigate("/dashboard");
+              }}
               className="w-full h-12 text-lg bg-gradient-to-r from-primary to-accent"
             >
               Back to Dashboard

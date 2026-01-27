@@ -1,17 +1,29 @@
 import { motion } from "framer-motion";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { useQuery } from "@tanstack/react-query";
+import apiFetch from "@/lib/api";
 import { Progress } from "@/components/ui/progress";
 import pandaHappy from "@/assets/panda-happy.png";
+import { logout } from "@/lib/auth";
 
 const Dashboard = () => {
+  const navigate = useNavigate();
+
   const stats = {
     xp: 1250,
     level: 5,
     streak: 7,
     lessons: 24,
   };
+
+  // fetch dynamic user stats (xp, level, streak, lessonsCompleted)
+  const { data: statsData } = useQuery({ queryKey: ["user-stats"], queryFn: () => apiFetch("/api/user/stats") });
+  const lessonsCompleted = statsData?.lessonsCompleted ?? stats.lessons;
+  const xp = statsData?.xp ?? stats.xp;
+  const level = statsData?.level ?? stats.level;
+  const streak = statsData?.streak ?? stats.streak;
 
   const badges = [
     { name: "Week Warrior", emoji: "🔥", earned: true },
@@ -30,9 +42,13 @@ const Dashboard = () => {
           className="flex items-center justify-between mb-8"
         >
           <div>
-            <h1 className="text-4xl font-bold mb-2">Welcome back! 🎉</h1>
-            <p className="text-xl text-muted-foreground">Ready to continue learning?</p>
+            <h1 className="text-4xl font-bold mb-2">Welcome🎉</h1>
+            <p className="text-xl text-muted-foreground">Get Ready learning?</p>
           </div>
+          <div className="flex items-center gap-4">
+            <Button variant="ghost" onClick={async () => { await logout(); navigate('/'); }} className="text-sm">
+              Logout
+            </Button>
           <motion.img
             src={pandaHappy}
             alt="Happy panda"
@@ -40,15 +56,16 @@ const Dashboard = () => {
             animate={{ rotate: [-5, 5, -5] }}
             transition={{ duration: 2, repeat: Infinity }}
           />
+          </div>
         </motion.div>
 
         {/* Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
           {[
-            { label: "XP Points", value: stats.xp, emoji: "⭐" },
-            { label: "Level", value: stats.level, emoji: "🎯" },
-            { label: "Day Streak", value: stats.streak, emoji: "🔥" },
-            { label: "Lessons", value: stats.lessons, emoji: "📚" },
+            { label: "XP Points", value: xp, emoji: "⭐" },
+            { label: "Level", value: level, emoji: "🎯" },
+            { label: "Day Streak", value: streak, emoji: "🔥" },
+            { label: "Lessons", value: lessonsCompleted, emoji: "📚" },
           ].map((stat, index) => (
             <motion.div
               key={stat.label}
@@ -87,7 +104,7 @@ const Dashboard = () => {
                   </div>
                   <Progress value={75} className="h-3" />
                 </div>
-                <Link to="/lesson">
+                <Link to="/lessons">
                   <Button className="w-full h-14 text-lg bg-gradient-to-r from-primary to-accent hover:scale-105 transition-transform">
                     Continue Learning 🚀
                   </Button>

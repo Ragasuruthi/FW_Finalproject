@@ -1,5 +1,6 @@
 import { motion } from "framer-motion";
 import { Link, useNavigate } from "react-router-dom";
+import apiFetch from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,7 +12,27 @@ const Login = () => {
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    navigate("/dashboard");
+    const form = e.currentTarget as HTMLFormElement;
+    const fd = new FormData(form);
+    const email = fd.get("email") as string;
+    const password = fd.get("password") as string;
+
+    if (!email || !password) {
+      alert("Email and password required");
+      return;
+    }
+
+    (async () => {
+      try {
+        const data = await apiFetch("/api/auth/login", { method: "POST", json: { email, password } });
+        if (data?.token) localStorage.setItem("token", data.token);
+        navigate("/dashboard");
+      } catch (err: any) {
+        console.error(err);
+        const msg = err?.data?.error || err?.data?.details || err?.message || "Unknown";
+        alert("Login error: " + msg);
+      }
+    })();
   };
 
   return (
@@ -48,6 +69,7 @@ const Login = () => {
                 <motion.div whileFocus={{ scale: 1.02 }}>
                   <Input
                     id="email"
+                    name="email"
                     type="email"
                     placeholder="you@example.com"
                     className="h-12 text-lg"
@@ -61,6 +83,7 @@ const Login = () => {
                 <motion.div whileFocus={{ scale: 1.02 }}>
                   <Input
                     id="password"
+                    name="password"
                     type="password"
                     placeholder="••••••••"
                     className="h-12 text-lg"

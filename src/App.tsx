@@ -9,6 +9,7 @@ import Signup from "./pages/Signup";
 import LanguageSelect from "./pages/LanguageSelect";
 import Dashboard from "./pages/Dashboard";
 import Lesson from "./pages/Lesson";
+import Lessons from "./pages/Lessons";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -25,6 +26,7 @@ const App = () => (
           <Route path="/signup" element={<Signup />} />
           <Route path="/language-select" element={<LanguageSelect />} />
           <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/lessons" element={<Lessons />} />
           <Route path="/lesson" element={<Lesson />} />
           <Route path="*" element={<NotFound />} />
         </Routes>

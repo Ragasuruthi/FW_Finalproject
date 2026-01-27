@@ -1,3 +1,4 @@
+import apiFetch from "@/lib/api";
 import { motion } from "framer-motion";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -11,7 +12,31 @@ const Signup = () => {
 
   const handleSignup = (e: React.FormEvent) => {
     e.preventDefault();
-    navigate("/language-select");
+    const form = e.currentTarget as HTMLFormElement;
+    const fd = new FormData(form);
+    const name = fd.get("name") as string;
+    const email = fd.get("email") as string;
+    const password = fd.get("password") as string;
+
+    // Basic client-side validation
+    if (!email || !password) {
+      alert("Email and password are required");
+      return;
+    }
+
+    // Call backend signup
+        (async () => {
+          try {
+            await apiFetch("/api/auth/signup", { method: "POST", json: { email, password, name } });
+            const data = await apiFetch("/api/auth/login", { method: "POST", json: { email, password } });
+            if (data?.token) localStorage.setItem("token", data.token);
+            navigate("/language-select");
+          } catch (err: any) {
+            console.error(err);
+            const msg = err?.data?.error || err?.data?.details || err?.message || "Unknown";
+            alert("Signup error: " + msg);
+          }
+        })();
   };
 
   return (
@@ -48,6 +73,7 @@ const Signup = () => {
                 <motion.div whileFocus={{ scale: 1.02 }}>
                   <Input
                     id="name"
+                    name="name"
                     type="text"
                     placeholder="Your name"
                     className="h-12 text-lg"
@@ -61,6 +87,7 @@ const Signup = () => {
                 <motion.div whileFocus={{ scale: 1.02 }}>
                   <Input
                     id="email"
+                    name="email"
                     type="email"
                     placeholder="you@example.com"
                     className="h-12 text-lg"
@@ -74,6 +101,7 @@ const Signup = () => {
                 <motion.div whileFocus={{ scale: 1.02 }}>
                   <Input
                     id="password"
+                    name="password"
                     type="password"
                     placeholder="••••••••"
                     className="h-12 text-lg"
