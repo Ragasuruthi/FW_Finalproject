@@ -11,6 +11,8 @@ import Dashboard from "./pages/Dashboard";
 import Lesson from "./pages/Lesson";
 import Lessons from "./pages/Lessons";
 import NotFound from "./pages/NotFound";
+import ChatTutor from "@/pages/ChatTutor";
+
 
 const queryClient = new QueryClient();
 
@@ -29,6 +31,8 @@ const App = () => (
           <Route path="/lessons" element={<Lessons />} />
           <Route path="/lesson" element={<Lesson />} />
           <Route path="*" element={<NotFound />} />
+          <Route path="/chat" element={<ChatTutor />} />
+
         </Routes>
       </BrowserRouter>
     </TooltipProvider>
