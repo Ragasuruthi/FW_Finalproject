@@ -16,33 +16,112 @@ app.use(express.json());
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
+// System prompts for different tutoring modes
+const getSystemPrompt = (mode, topic, learningStyle) => {
+  const basePrompt = `You are an expert, friendly, and patient language learning tutor. Your role is to help students learn languages effectively and enjoyably.
+
+Learning Style: The student learns best through ${learningStyle} methods.
+`;
+
+  const modePrompts = {
+    tutor: `${basePrompt}
+Mode: General Tutoring
+- Explain concepts clearly with examples
+- Ask follow-up questions to check understanding
+- Encourage the student and celebrate progress
+- Adapt explanations based on their level
+- Provide relevant context and real-world examples
+${topic ? `- Focus on: ${topic}` : ""}
+`,
+
+    practice: `${basePrompt}
+Mode: Practice Partner
+- Have a natural conversation in the learning language
+- Gently correct mistakes while keeping the conversation flowing
+- Encourage longer responses with follow-up questions
+- Praise good attempts and constructive feedback
+- Mix easy and challenging topics to maintain engagement
+${topic ? `- Topic: ${topic}` : ""}
+Use simple language but gradually introduce complexity.
+`,
+
+    "grammar-check": `${basePrompt}
+Mode: Grammar Assistant
+- Analyze the user's input for grammar, spelling, and punctuation
+- Provide clear explanations for any errors
+- Suggest improvements with examples
+- Explain the underlying grammar rules
+- Be encouraging and non-judgmental
+${topic ? `- Focus on grammar related to: ${topic}` : ""}
+`,
+
+    vocabulary: `${basePrompt}
+Mode: Vocabulary Builder
+- Help expand the student's vocabulary
+- Provide definitions, examples, and usage context
+- Suggest similar words (synonyms) and opposites (antonyms)
+- Create sentences showing word usage
+- Explain nuances between similar words
+${topic ? `- Focus on vocabulary related to: ${topic}` : ""}
+- Use the words in engaging, memorable contexts
+`
+  };
+
+  return modePrompts[mode] || modePrompts.tutor;
+};
+
 app.post("/api/ai-tutor", async (req, res) => {
   try {
-    const { message } = req.body;
+    const { message, mode = "tutor", topic = "", conversationHistory = [], learningStyle = "visual" } = req.body;
+
+    if (!message) {
+      return res.status(400).json({ reply: "Message is required" });
+    }
 
     const model = genAI.getGenerativeModel({
       model: "gemini-1.5-flash",
+      systemInstruction: getSystemPrompt(mode, topic, learningStyle)
     });
 
-    const prompt = `
-You are a friendly English tutor.
-Reply like a real chatbot.
-Be conversational and helpful.
+    // Build conversation history for context
+    let conversationContext = [];
+    if (conversationHistory && conversationHistory.length > 0) {
+      conversationContext = conversationHistory.map((msg) => ({
+        role: msg.role === "user" ? "user" : "model",
+        parts: [{ text: msg.content }]
+      }));
+    }
 
-User: ${message}
-AI:
-`;
+    // Add current message
+    conversationContext.push({
+      role: "user",
+      parts: [{ text: message }]
+    });
 
-    const result = await model.generateContent(prompt);
-    const reply = result.response?.text() || "No response from AI";
+    // Start the chat with history
+    const chat = model.startChat({
+      history: conversationContext.slice(0, -1) // Exclude the current message
+    });
+
+    const result = await chat.sendMessage(message);
+    const reply = result.response?.text() || "I'm having trouble responding. Please try again.";
 
     res.json({ reply });
   } catch (error) {
-    console.error("❌ Gemini error:", error);
-    res.status(500).json({ reply: "AI error occurred" });
+    console.error("❌ Gemini error:", error.message || error);
+    res.status(500).json({
+      reply: "I encountered an error while processing your request. Please try again in a moment."
+    });
   }
 });
 
-app.listen(5000, () => {
-  console.log("✅ Backend running at http://localhost:5000");
+// Health check endpoint
+app.get("/health", (req, res) => {
+  res.json({ status: "ok", service: "AI Tutor Server" });
+});
+
+const PORT = process.env.AI_PORT || 5000;
+app.listen(PORT, () => {
+  console.log(`✅ AI Tutor Server running at http://localhost:${PORT}`);
+  console.log(`📚 Ready to help students learn languages!`);
 });

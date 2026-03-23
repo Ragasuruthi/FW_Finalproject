@@ -7,6 +7,8 @@ import lessonsRoutes from "./routes/lessons";
 import progressRoutes from "./routes/progress";
 import userRoutes from "./routes/user";
 import debugRoutes from "./routes/debug";
+import conversationsRoutes from "./routes/conversations";
+import preferencesRoutes from "./routes/preferences";
 import Lesson from "./models/Lesson";
 
 dotenv.config();
@@ -21,11 +23,13 @@ app.get("/", (req, res) => res.send({ status: "ok", message: "Learning-web backe
 
 app.use("/api/auth", authRoutes);
 app.use("/api/lessons", lessonsRoutes);
-  app.use("/api/progress", progressRoutes);
-  app.use("/api/user", userRoutes);
-  if (process.env.NODE_ENV !== "production") {
-    app.use("/api/debug", debugRoutes);
-  }
+app.use("/api/progress", progressRoutes);
+app.use("/api/user", userRoutes);
+app.use("/api/conversations", conversationsRoutes);
+app.use("/api/preferences", preferencesRoutes);
+if (process.env.NODE_ENV !== "production") {
+  app.use("/api/debug", debugRoutes);
+}
 
 async function start() {
   const mongoUri = process.env.MONGODB_URI || "mongodb://localhost:27017/learning-web";
