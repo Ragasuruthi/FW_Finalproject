@@ -32,7 +32,7 @@ router.get("/stats", authMiddleware, async (req: RequestWithUser, res: Response)
     const now = new Date();
     const daysWithActivity = new Set<string>();
     for (const p of progress) {
-      const d = new Date(p.updatedAt || p.createdAt);
+      const d = new Date(p.updatedAt || new Date());
       // use YYYY-MM-DD as key
       const key = d.toISOString().slice(0, 10);
       daysWithActivity.add(key);

@@ -1,25 +1,45 @@
+// server.js
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
+import connectDB from "./config/db"; // ✅ use your db.js
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
+// ----------------------
+// 1️⃣ Load environment variables
+// ----------------------
 dotenv.config();
 
+// ----------------------
+// 2️⃣ Connect to MongoDB
+// ----------------------
+connectDB(); // This replaces mongoose.connect(...)
+
+// ----------------------
+// 3️⃣ Check Gemini API Key
+// ----------------------
 if (!process.env.GEMINI_API_KEY) {
   console.error("❌ GEMINI_API_KEY not found in .env");
   process.exit(1);
 }
 
+// ----------------------
+// 4️⃣ Initialize Express app
+// ----------------------
 const app = express();
 app.use(cors());
 app.use(express.json());
 
+// ----------------------
+// 5️⃣ Initialize Google Generative AI
+// ----------------------
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
-// System prompts for different tutoring modes
+// ----------------------
+// 6️⃣ System prompts helper
+// ----------------------
 const getSystemPrompt = (mode, topic, learningStyle) => {
-  const basePrompt = `You are an expert, friendly, and patient language learning tutor. Your role is to help students learn languages effectively and enjoyably.
-
+  const basePrompt = `You are an expert, friendly, and patient language learning tutor.
 Learning Style: The student learns best through ${learningStyle} methods.
 `;
 
@@ -31,8 +51,7 @@ Mode: General Tutoring
 - Encourage the student and celebrate progress
 - Adapt explanations based on their level
 - Provide relevant context and real-world examples
-${topic ? `- Focus on: ${topic}` : ""}
-`,
+${topic ? `- Focus on: ${topic}` : ""}`,
 
     practice: `${basePrompt}
 Mode: Practice Partner
@@ -42,8 +61,7 @@ Mode: Practice Partner
 - Praise good attempts and constructive feedback
 - Mix easy and challenging topics to maintain engagement
 ${topic ? `- Topic: ${topic}` : ""}
-Use simple language but gradually introduce complexity.
-`,
+Use simple language but gradually introduce complexity.`,
 
     "grammar-check": `${basePrompt}
 Mode: Grammar Assistant
@@ -52,8 +70,7 @@ Mode: Grammar Assistant
 - Suggest improvements with examples
 - Explain the underlying grammar rules
 - Be encouraging and non-judgmental
-${topic ? `- Focus on grammar related to: ${topic}` : ""}
-`,
+${topic ? `- Focus on grammar related to: ${topic}` : ""}`,
 
     vocabulary: `${basePrompt}
 Mode: Vocabulary Builder
@@ -63,13 +80,15 @@ Mode: Vocabulary Builder
 - Create sentences showing word usage
 - Explain nuances between similar words
 ${topic ? `- Focus on vocabulary related to: ${topic}` : ""}
-- Use the words in engaging, memorable contexts
-`
+- Use the words in engaging, memorable contexts`
   };
 
   return modePrompts[mode] || modePrompts.tutor;
 };
 
+// ----------------------
+// 7️⃣ AI Tutor endpoint
+// ----------------------
 app.post("/api/ai-tutor", async (req, res) => {
   try {
     const { message, mode = "tutor", topic = "", conversationHistory = [], learningStyle = "visual" } = req.body;
@@ -83,7 +102,6 @@ app.post("/api/ai-tutor", async (req, res) => {
       systemInstruction: getSystemPrompt(mode, topic, learningStyle)
     });
 
-    // Build conversation history for context
     let conversationContext = [];
     if (conversationHistory && conversationHistory.length > 0) {
       conversationContext = conversationHistory.map((msg) => ({
@@ -92,15 +110,13 @@ app.post("/api/ai-tutor", async (req, res) => {
       }));
     }
 
-    // Add current message
     conversationContext.push({
       role: "user",
       parts: [{ text: message }]
     });
 
-    // Start the chat with history
     const chat = model.startChat({
-      history: conversationContext.slice(0, -1) // Exclude the current message
+      history: conversationContext.slice(0, -1)
     });
 
     const result = await chat.sendMessage(message);
@@ -115,11 +131,16 @@ app.post("/api/ai-tutor", async (req, res) => {
   }
 });
 
-// Health check endpoint
+// ----------------------
+// 8️⃣ Health check endpoint
+// ----------------------
 app.get("/health", (req, res) => {
   res.json({ status: "ok", service: "AI Tutor Server" });
 });
 
+// ----------------------
+// 9️⃣ Start server
+// ----------------------
 const PORT = process.env.AI_PORT || 5000;
 app.listen(PORT, () => {
   console.log(`✅ AI Tutor Server running at http://localhost:${PORT}`);
