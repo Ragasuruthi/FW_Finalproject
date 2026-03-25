@@ -1,0 +1,19 @@
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: ci-task
+spec:
+  steps:
+    - name: cleanup
+      image: alpine
+      script: |
+        #!/bin/sh
+        echo "Cleaning workspace..."
+        rm -rf node_modules
+
+    - name: test
+      image: node:18
+      script: |
+        #!/bin/sh
+        npm install
+        npm test
