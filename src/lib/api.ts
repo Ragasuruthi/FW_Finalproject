@@ -31,7 +31,17 @@ async function apiFetch(path: string, opts: ApiOptions = {}) {
   }
 
   if (!res.ok) {
-    const err: any = new Error("API Error");
+    let message = `Request failed (${res.status} ${res.statusText || ""})`.trim();
+    if (data && typeof data === "object") {
+      const o = data as Record<string, unknown>;
+      if (typeof o.error === "string" && o.error) message = o.error;
+      else if (typeof o.details === "string" && o.details) message = `${message}: ${o.details}`;
+      else if (typeof o.message === "string" && o.message) message = o.message;
+    } else if (typeof data === "string" && data.trim()) {
+      const t = data.trim();
+      message = t.length > 300 ? `${message} — ${t.slice(0, 300)}…` : `${message} — ${t}`;
+    }
+    const err: any = new Error(message);
     err.status = res.status;
     err.data = data;
     throw err;

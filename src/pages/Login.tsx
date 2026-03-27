@@ -10,102 +10,54 @@ import pandaMascot from "@/assets/panda-mascot.png";
 const Login = () => {
   const navigate = useNavigate();
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     const form = e.currentTarget as HTMLFormElement;
     const fd = new FormData(form);
     const email = fd.get("email") as string;
     const password = fd.get("password") as string;
 
-    if (!email || !password) {
-      alert("Email and password required");
-      return;
-    }
-
-    (async () => {
-      try {
-        const data = await apiFetch("/api/auth/login", { method: "POST", json: { email, password } });
-        if (data?.token) localStorage.setItem("token", data.token);
+    try {
+      const data = await apiFetch("/api/auth/login", { 
+        method: "POST", 
+        json: { email, password } 
+      });
+      
+      if (data?.token) {
+        localStorage.setItem("token", data.token);
         navigate("/dashboard");
-      } catch (err: any) {
-        console.error(err);
-        const msg = err?.data?.error || err?.data?.details || err?.message || "Unknown";
-        alert("Login error: " + msg);
       }
-    })();
+    } catch (err: any) {
+      alert("Login failed: " + (err.data?.error || "Invalid credentials"));
+    }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-accent/20 via-background to-primary/20 p-4">
-      <motion.div
-        initial={{ opacity: 0, scale: 0.9 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.5 }}
-        className="w-full max-w-md"
-      >
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/10 via-background to-accent/10 p-4">
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="w-full max-w-md">
         <Card className="border-2 shadow-2xl">
           <CardHeader className="text-center">
-            <motion.div
-              animate={{ rotate: [0, 10, -10, 0] }}
-              transition={{ duration: 2, repeat: Infinity, repeatDelay: 3 }}
-              className="mx-auto mb-4 w-24 h-24"
-            >
-              <img
-                src={pandaMascot}
-                alt="Panda waving"
-                className="w-full h-full object-contain"
-              />
-            </motion.div>
+            <img src={pandaMascot} className="w-24 h-24 mx-auto mb-4" alt="Panda" />
             <CardTitle className="text-3xl font-bold">Welcome Back!</CardTitle>
-            <CardDescription className="text-lg">
-              Your panda friend missed you 🐼
-            </CardDescription>
+            <CardDescription>Login to continue your panda journey</CardDescription>
           </CardHeader>
-          
           <CardContent>
-            <form onSubmit={handleLogin} className="space-y-6">
+            <form onSubmit={handleLogin} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="email" className="text-lg">Email</Label>
-                <motion.div whileFocus={{ scale: 1.02 }}>
-                  <Input
-                    id="email"
-                    name="email"
-                    type="email"
-                    placeholder="you@example.com"
-                    className="h-12 text-lg"
-                    required
-                  />
-                </motion.div>
+                <Label>Email</Label>
+                <Input name="email" type="email" placeholder="you@example.com" required />
               </div>
-
               <div className="space-y-2">
-                <Label htmlFor="password" className="text-lg">Password</Label>
-                <motion.div whileFocus={{ scale: 1.02 }}>
-                  <Input
-                    id="password"
-                    name="password"
-                    type="password"
-                    placeholder="••••••••"
-                    className="h-12 text-lg"
-                    required
-                  />
-                </motion.div>
+                <Label>Password</Label>
+                <Input name="password" type="password" placeholder="••••••••" required />
               </div>
-
-              <Button
-                type="submit"
-                className="w-full h-12 text-lg bg-gradient-to-r from-primary to-accent hover:scale-105 transition-transform"
-              >
+              <Button type="submit" className="w-full h-12 text-lg bg-primary hover:scale-105 transition-transform">
                 Login 🚀
               </Button>
             </form>
-
             <div className="mt-6 text-center">
               <p className="text-muted-foreground">
-                Don't have an account?{" "}
-                <Link to="/signup" className="text-primary font-semibold hover:underline">
-                  Sign up here
-                </Link>
+                Don't have an account? <Link to="/signup" className="text-primary font-bold">Sign up</Link>
               </p>
             </div>
           </CardContent>

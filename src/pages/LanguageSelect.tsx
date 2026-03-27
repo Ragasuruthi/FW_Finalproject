@@ -14,6 +14,12 @@ const languages = [
 const LanguageSelect = () => {
   const navigate = useNavigate();
 
+  const handleSelect = (langName: string) => {
+    // Save selection so the Lessons page knows what to fetch
+    localStorage.setItem("selectedLanguage", langName.toLowerCase());
+    navigate("/dashboard");
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary/20 via-background to-accent/20 p-8">
       <motion.div
@@ -22,7 +28,7 @@ const LanguageSelect = () => {
         className="container mx-auto"
       >
         <div className="text-center mb-12">
-          <h1 className="text-5xl font-bold mb-4 bg-gradient-to-r from-primary via-accent to-secondary bg-clip-text text-transparent">
+          <h1 className="text-6xl font-black mb-4 bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
             Choose Your Language
           </h1>
           <p className="text-2xl text-muted-foreground">
@@ -41,7 +47,7 @@ const LanguageSelect = () => {
               whileTap={{ scale: 0.95 }}
             >
               <Card
-                onClick={() => navigate("/dashboard")}
+                onClick={() => handleSelect(language.name)}
                 className={`cursor-pointer p-8 text-center border-2 shadow-lg hover:shadow-2xl transition-all duration-300 bg-gradient-to-br ${language.color} bg-opacity-10`}
               >
                 <motion.div

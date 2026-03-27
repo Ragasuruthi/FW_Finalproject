@@ -5,7 +5,7 @@ const conversationSchema = new mongoose.Schema({
   language: { type: String, required: true },
   messages: [
     {
-      role: { type: String, enum: ["user", "ai"] },
+      role: { type: String, enum: ["user", "assistant", "ai"] },
       content: String,
       createdAt: { type: Date, default: Date.now }
     }

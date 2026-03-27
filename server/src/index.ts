@@ -2,7 +2,6 @@ import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 import mongoose from "mongoose";
-import { GoogleGenerativeAI } from "@google/generative-ai"; // 1. New Import
 
 import authRoutes from "./routes/auth";
 import lessonsRoutes from "./routes/lessons";
@@ -12,6 +11,7 @@ import debugRoutes from "./routes/debug";
 import conversationsRoutes from "./routes/conversations";
 import preferencesRoutes from "./routes/preferences";
 import Lesson from "./models/Lesson";
+import { generateTutorReply } from "./services/aiTutor";
 
 dotenv.config();
 
@@ -21,41 +21,26 @@ const port = process.env.PORT || 4000;
 app.use(cors());
 app.use(express.json());
 
-// --- AI TUTOR INTEGRATION ---
-// This handles the request coming from your conversations.js route
-const apiKey = process.env.GEMINI_API_KEY;
-if (!apiKey) {
-  throw new Error("GEMINI_API_KEY environment variable is required");
-}
-const genAI = new GoogleGenerativeAI(apiKey);
-
+// --- AI TUTOR (Gemini or OpenAI — see AI_PROVIDER in .env) ---
 app.post("/api/ai-tutor", async (req, res) => {
   const { message, mode, topic, conversationHistory } = req.body;
 
-  try {
-    const model = genAI.getGenerativeModel({ 
-      model: "gemini-1.5-flash",
-      systemInstruction: `You are an expert, friendly AI Tutor. 
-      Current Learning Mode: ${mode || 'General'}. 
-      Current Topic: ${topic || 'Language Learning'}.
-      Style: Use simple analogies, be encouraging, and always end with a small question to check if the student understood.`
-    });
-
-    // Format history for Gemini (from user/assistant to user/model)
-    const history = (conversationHistory || []).map((msg: { role: string; content: string }) => ({
-      role: msg.role === "user" ? "user" : "model",
-      parts: [{ text: msg.content }],
-    }));
-
-    const chat = model.startChat({ history });
-    const result = await chat.sendMessage(message);
-    const response = await result.response;
-    
-    res.json({ reply: response.text() });
-  } catch (error) {
-    console.error("Gemini AI Error:", error);
-    res.status(500).json({ error: "The AI Tutor is resting. Try again in a moment!" });
+  if (!message || typeof message !== "string") {
+    return res.status(400).json({ error: "message required" });
   }
+
+  const { success, reply } = await generateTutorReply({
+    message,
+    mode,
+    topic,
+    conversationHistory,
+  });
+
+  if (!success) {
+    return res.status(503).json({ error: reply });
+  }
+
+  return res.json({ reply });
 });
 // ----------------------------
 

@@ -2,18 +2,10 @@
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
-import connectDB from "./config/db"; // ✅ use your db.js
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
-// ----------------------
-// 1️⃣ Load environment variables
-// ----------------------
 dotenv.config();
-
-// ----------------------
-// 2️⃣ Connect to MongoDB
-// ----------------------
-connectDB(); // This replaces mongoose.connect(...)
+// Removed connectDB import since it doesn't exist and isn't used
 
 // ----------------------
 // 3️⃣ Check Gemini API Key

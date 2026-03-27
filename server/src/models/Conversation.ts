@@ -1,7 +1,7 @@
 import mongoose, { Schema, Document } from "mongoose";
 
 export interface IMessage {
-  role: "user" | "assistant";
+  role: "user" | "assistant" | "ai";
   content: string;
   timestamp: Date;
 }
@@ -19,7 +19,7 @@ export interface IConversation extends Document {
 
 const MessageSchema: Schema = new Schema(
   {
-    role: { type: String, enum: ["user", "assistant"], required: true },
+    role: { type: String, enum: ["user", "assistant", "ai"], required: true },
     content: { type: String, required: true },
     timestamp: { type: Date, default: Date.now }
   },

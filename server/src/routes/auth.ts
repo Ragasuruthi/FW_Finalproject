@@ -22,9 +22,16 @@ router.post("/signup", async (req: Request, res: Response) => {
     console.log("created user:", { id: user._id, email: user.email });
     return res.status(201).json({ id: user._id, email: user.email, name: user.name });
   } catch (err) {
+    const anyErr = err as { code?: number; message?: string };
+    if (anyErr?.code === 11000) {
+      return res.status(409).json({ error: "user exists" });
+    }
     // More helpful error logging for debugging (do not expose in production)
-    console.error("signup error", err && (err as any).message ? (err as any).message : err);
-    return res.status(500).json({ error: "internal error", details: process.env.NODE_ENV === "production" ? undefined : (err as any).message });
+    console.error("signup error", anyErr?.message ?? err);
+    return res.status(500).json({
+      error: "internal error",
+      details: process.env.NODE_ENV === "production" ? undefined : anyErr?.message,
+    });
   }
 });
 
